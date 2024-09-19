@@ -684,6 +684,11 @@ public class NetworkManager : INetworkManager, IDisposable
     /// <inheritdoc/>
     public bool HasRemoteAccess(IPAddress remoteIP)
     {
+        if (remoteIP.IsIPv4MappedToIPv6)
+        {
+            remoteIP = remoteIP.MapToIPv4();
+        }
+
         var config = _configurationManager.GetNetworkConfiguration();
         if (config.EnableRemoteAccess)
         {
@@ -891,6 +896,11 @@ public class NetworkManager : INetworkManager, IDisposable
     {
         if (NetworkUtils.TryParseToSubnet(address, out var subnet))
         {
+            if (subnet.Prefix.IsIPv4MappedToIPv6)
+            {
+                return IPAddress.IsLoopback(subnet.Prefix) || (_lanSubnets.Any(x => x.Contains(subnet.Prefix.MapToIPv4())) && !_excludedSubnets.Any(x => x.Contains(subnet.Prefix.MapToIPv4())));
+            }
+
             return IPAddress.IsLoopback(subnet.Prefix) || (_lanSubnets.Any(x => x.Contains(subnet.Prefix)) && !_excludedSubnets.Any(x => x.Contains(subnet.Prefix)));
         }
 
