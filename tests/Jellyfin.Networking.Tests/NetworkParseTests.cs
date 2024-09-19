@@ -283,6 +283,7 @@ namespace Jellyfin.Networking.Tests
         [Theory]
         [InlineData("185.10.10.10,200.200.200.200", "79.2.3.4", RemoteAccessPolicyResult.RejectDueToNotAllowlistedRemoteIP)]
         [InlineData("185.10.10.10", "185.10.10.10", RemoteAccessPolicyResult.Allow)]
+        [InlineData("185.10.10.10", "::ffff:185.10.10.10", RemoteAccessPolicyResult.Allow)]
         [InlineData("", "100.100.100.100", RemoteAccessPolicyResult.Allow)]
 
         public void HasRemoteAccess_GivenWhitelist_AllowsOnlyIPsInWhitelist(string addresses, string remoteIP, RemoteAccessPolicyResult expectedResult)
@@ -305,6 +306,7 @@ namespace Jellyfin.Networking.Tests
         [Theory]
         [InlineData("185.10.10.10,200.200.200.200", "79.2.3.4", RemoteAccessPolicyResult.RejectDueToRemoteAccessDisabled)]
         [InlineData("185.10.10.10", "127.0.0.1", RemoteAccessPolicyResult.Allow)]
+        [InlineData("", "::ffff:192.168.11.1", RemoteAccessPolicyResult.Allow)]
         [InlineData("", "100.100.100.100", RemoteAccessPolicyResult.RejectDueToRemoteAccessDisabled)]
 
         public void HasRemoteAccess_GivenRemoteAccessDisabled_IgnoresAllowlist(string addresses, string remoteIP, RemoteAccessPolicyResult expectedResult)
