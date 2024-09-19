@@ -280,6 +280,7 @@ namespace Jellyfin.Networking.Tests
         [Theory]
         [InlineData("185.10.10.10,200.200.200.200", "79.2.3.4", true)]
         [InlineData("185.10.10.10", "185.10.10.10", false)]
+        [InlineData("185.10.10.10", "::ffff:185.10.10.10", false)]
         [InlineData("", "100.100.100.100", false)]
 
         public void HasRemoteAccess_GivenWhitelist_AllowsOnlyIPsInWhitelist(string addresses, string remoteIP, bool denied)
@@ -300,9 +301,57 @@ namespace Jellyfin.Networking.Tests
         }
 
         [Theory]
+        [InlineData("192.168.1.1")]
+        [InlineData("192.168.1.2/24")]
+        [InlineData("::ffff:192.168.11.1")]
+        [InlineData("fdcd:abcd:abcd:abcd::1")]
+
+        public void StringInputTo_IsInLocalNetwork(string mappedIpAddress)
+        {
+            var conf = new NetworkConfiguration()
+            {
+                EnableIPv6 = true
+            };
+
+            var startupConf = new Mock<IConfiguration>();
+            using var nm = new NetworkManager(NetworkParseTests.GetMockConfig(conf), startupConf.Object, new NullLogger<NetworkManager>());
+
+            Assert.True(nm.IsInLocalNetwork(mappedIpAddress));
+        }
+
+        [Theory]
+        [InlineData("192.168.11.1", true, true, true)]
+        [InlineData("::ffff:192.168.11.1", true, true, true)]
+        [InlineData("fdcd:abcd:abcd:abcd::1", true, true, true)]
+        [InlineData("192.168.11.1", true, false, true)]
+        [InlineData("::ffff:192.168.11.1", true, false, true)]
+        [InlineData("fdcd:abcd:abcd:abcd::1", true, false, false)]
+        [InlineData("192.168.11.1", false, true, false)]
+        [InlineData("::ffff:192.168.11.1", false, true, false)]
+        [InlineData("fdcd:abcd:abcd:abcd::1", false, true, true)]
+
+        public void LanIPHasAccess_WithoutRemoteAccess(string remoteIP, bool enableIPv4, bool enableIPv6, bool allowed)
+        {
+            var conf = new NetworkConfiguration()
+            {
+                EnableIPv4 = enableIPv4,
+                EnableIPv6 = enableIPv6,
+                EnableRemoteAccess = false
+            };
+
+            var startupConf = new Mock<IConfiguration>();
+            using var nm = new NetworkManager(NetworkParseTests.GetMockConfig(conf), startupConf.Object, new NullLogger<NetworkManager>());
+
+            Assert.Equal(nm.HasRemoteAccess(IPAddress.Parse(remoteIP)), allowed);
+        }
+
+        [Theory]
         [InlineData("185.10.10.10", "79.2.3.4", false)]
         [InlineData("185.10.10.10", "185.10.10.10", true)]
+        [InlineData("185.10.10.10", "::ffff:185.10.10.10", true)]
         [InlineData("", "100.100.100.100", false)]
+        [InlineData("", "::ffff:100.100.100.100", false)]
+        [InlineData("", "::ffff:192.168.11.1", false)]
 
         public void HasRemoteAccess_GivenBlacklist_BlacklistTheIPs(string addresses, string remoteIP, bool denied)
         {

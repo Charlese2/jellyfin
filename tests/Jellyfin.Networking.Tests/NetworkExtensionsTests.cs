@@ -25,6 +25,7 @@ namespace Jellyfin.Networking.Tests
         [InlineData("[fe80::7add:12ff:febb:c67b%16]")]
         [InlineData("192.168.1.2/255.255.255.0")]
         [InlineData("192.168.1.2/24")]
+        [InlineData("::ffff:192.168.1.2")]
         public static void TryParse_ValidHostStrings_True(string address)
             => Assert.True(NetworkUtils.TryParseHost(address, out _, true, true));
 
